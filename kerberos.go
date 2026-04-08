@@ -18,6 +18,10 @@ type KerberosEncryption struct {
 
 // Validate checks the integrity of the given buffer by verifying the HMAC checksum
 func (ke *KerberosEncryption) Validate(buffer []byte) bool {
+	if len(buffer) < 0x10 {
+		return false
+	}
+
 	data := buffer[:len(buffer)-0x10]
 	checksum := buffer[len(buffer)-0x10:]
 	mac := hmac.New(md5.New, ke.key)

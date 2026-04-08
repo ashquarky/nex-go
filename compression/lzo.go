@@ -29,6 +29,10 @@ func (l *LZO) Compress(payload []byte) ([]byte, error) {
 
 // Decompress decompresses the payload using LZO
 func (l *LZO) Decompress(payload []byte) ([]byte, error) {
+	if len(payload) < 1 {
+		return []byte{}, fmt.Errorf("Failed to decompress payload. Data truncated, %d", len(payload))
+	}
+
 	compressionRatio := payload[0]
 	compressed := payload[1:]
 

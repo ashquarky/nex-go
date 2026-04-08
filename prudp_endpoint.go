@@ -198,7 +198,11 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 		slidingWindow = connection.SlidingWindow(substreamID)
 
 		for i := 0; i < int(additionalIDsCount); i++ {
-			additionalID, _ := stream.ReadUInt16LE()
+			additionalID, err := stream.ReadUInt16LE()
+			if err != nil {
+				logger.Error(err.Error())
+				break
+			}
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	} else {
@@ -209,7 +213,11 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 		baseSequenceID = packet.SequenceID()
 
 		for stream.Remaining() > 0 {
-			additionalID, _ := stream.ReadUInt16LE()
+			additionalID, err := stream.ReadUInt16LE()
+			if err != nil {
+				logger.Error(err.Error())
+				break
+			}
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	}

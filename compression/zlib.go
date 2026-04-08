@@ -14,6 +14,7 @@ func (z *Zlib) Compress(payload []byte) ([]byte, error) {
 	compressed := bytes.Buffer{}
 
 	zlibWriter := zlib.NewWriter(&compressed)
+	defer zlibWriter.Close()
 
 	_, err := zlibWriter.Write(payload)
 	if err != nil {
@@ -40,6 +41,10 @@ func (z *Zlib) Compress(payload []byte) ([]byte, error) {
 
 // Decompress decompresses the payload using zlib
 func (z *Zlib) Decompress(payload []byte) ([]byte, error) {
+	if len(payload) < 1 {
+		return []byte{}, fmt.Errorf("Failed to decompress payload. Data truncated, %d", len(payload))
+	}
+
 	compressionRatio := payload[0]
 	compressed := payload[1:]
 
@@ -55,6 +60,7 @@ func (z *Zlib) Decompress(payload []byte) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+	defer zlibReader.Close()
 
 	_, err = decompressed.ReadFrom(zlibReader)
 	if err != nil {
