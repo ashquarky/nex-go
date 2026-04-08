@@ -2,11 +2,17 @@ package nex
 
 import (
 	"net"
+	"strconv"
 	"testing"
+
+	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
 func FuzzPRUDPServer_handleSocketMessage(f *testing.F) {
 	v1Key := make([]byte, 16)
+	kerberosPass := string(make([]byte, 16))
+	authServerAccount := NewAccount(types.NewPID(1), "Quazal Authentication", kerberosPass, false)
+	secureServerAccount := NewAccount(types.NewPID(2), "Quazal Rendez-Vous", kerberosPass, false)
 
 	f.Fuzz(func(t *testing.T, packets []byte,
 		secure bool, checksums bool, enhancedChecksums bool, quazalMode bool, legacySignature bool, encryptedConnect bool) {
@@ -27,6 +33,44 @@ func FuzzPRUDPServer_handleSocketMessage(f *testing.F) {
 
 		endpoint := NewPRUDPEndPoint(1)
 		endpoint.IsSecureEndPoint = secure
+		if secure {
+			endpoint.ServerAccount = secureServerAccount
+		} else {
+			endpoint.ServerAccount = authServerAccount
+		}
+		endpoint.AccountDetailsByUsername = func(username string) (*Account, *Error) {
+			if username == authServerAccount.Username {
+				return authServerAccount, nil
+			}
+			if username == secureServerAccount.Username {
+				return secureServerAccount, nil
+			}
+
+			pidInt, err := strconv.Atoi(username)
+			if err != nil {
+				t.Logf("%v", err)
+				return nil, NewError(ResultCodes.RendezVous.InvalidUsername, "Invalid username")
+			}
+
+			pid := types.NewPID(uint64(pidInt))
+
+			account := NewAccount(pid, username, "AAAAAAAAAAAAAAAA", false)
+
+			return account, nil
+		}
+		endpoint.AccountDetailsByPID = func(pid types.PID) (*Account, *Error) {
+			if pid.Equals(authServerAccount.PID) {
+				return authServerAccount, nil
+			}
+			if pid.Equals(secureServerAccount.PID) {
+				return secureServerAccount, nil
+			}
+
+			account := NewAccount(pid, strconv.Itoa(int(pid)), "AAAAAAAAAAAAAAAA", false)
+
+			return account, nil
+		}
+		server.BindPRUDPEndPoint(endpoint)
 
 		udpAddress, err := net.ResolveUDPAddr("udp", "127.0.0.1:6969")
 		if err != nil {
