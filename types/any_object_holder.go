@@ -129,7 +129,7 @@ func (aoh AnyObjectHolder[T]) FormatToString(indentationLevel int) string {
 
 	b.WriteString("AnyDataHolder{\n")
 	b.WriteString(fmt.Sprintf("%sIdentifier: %s,\n", indentationValues, aoh.Object.ObjectID()))
-	b.WriteString(fmt.Sprintf("%sObject: %s\n", indentationValues, aoh.Object))
+	b.WriteString(fmt.Sprintf("%sObject: %v\n", indentationValues, aoh.Object))
 
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
