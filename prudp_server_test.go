@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/PretendoNetwork/nex-go/v2/compression"
+	"github.com/PretendoNetwork/nex-go/v2/encryption"
 	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
@@ -15,7 +17,8 @@ func FuzzPRUDPServer_handleSocketMessage(f *testing.F) {
 	secureServerAccount := NewAccount(types.NewPID(2), "Quazal Rendez-Vous", kerberosPass, false)
 
 	f.Fuzz(func(t *testing.T, packets []byte,
-		secure bool, checksums bool, enhancedChecksums bool, quazalMode bool, legacySignature bool, encryptedConnect bool) {
+		secure bool, checksums bool, enhancedChecksums bool, quazalMode bool, legacySignature bool,
+		encryptedConnect bool, verboseRMC bool, dummyEncrypt bool, compress bool, lzo bool) {
 		server := NewPRUDPServer()
 		server.PRUDPv1ConnectionSignatureKey = v1Key
 		server.LibraryVersions.SetDefault(NewLibraryVersion(3, 10, 0))
@@ -30,8 +33,17 @@ func FuzzPRUDPServer_handleSocketMessage(f *testing.F) {
 		server.PRUDPV0Settings.LegacyConnectionSignature = legacySignature
 		server.PRUDPV0Settings.EncryptedConnect = encryptedConnect
 		server.PRUDPV1Settings.LegacyConnectionSignature = legacySignature
+		server.UseVerboseRMC = verboseRMC
 
 		endpoint := NewPRUDPEndPoint(1)
+		if dummyEncrypt {
+			endpoint.DefaultStreamSettings.EncryptionAlgorithm = encryption.NewDummyEncryption()
+		}
+		if compress && lzo {
+			endpoint.DefaultStreamSettings.CompressionAlgorithm = compression.NewLZOCompression()
+		} else if compress {
+			endpoint.DefaultStreamSettings.CompressionAlgorithm = compression.NewZlibCompression()
+		}
 		endpoint.IsSecureEndPoint = secure
 		if secure {
 			endpoint.ServerAccount = secureServerAccount
